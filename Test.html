@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script type='module'>
+import {buildRandomMSP} from './random.js';
+import {$, $$} from './util.js';
+
+window.addEventListener('load', e => {
+    const msp = buildRandomMSP(200, 200, 6, 80); 
+    const canvas = $('#msp-canvas');
+    const ctx = canvas.getContext('2d');
+    //const msp = new MSP(rhombi);
+    //msp.center = new Point(200,200);
+    //console.log(msp.center);
+    msp.rhombi[0].text = 'Hello';
+    msp.draw(ctx);
+});
+</script>
+</head>
+<body>
+<h1>MSP Test</h1>
+<canvas id='msp-canvas' width='400' height='400'></canvas>
+</body>
+</html>
