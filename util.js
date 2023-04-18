@@ -1,5 +1,5 @@
 
-export {Point, $, $$, drawText, intersect, shuffle};
+export {Point, $, $$, drawText, intersect, shuffle, randomColor};
 
 class Point {
     constructor(x, y) {
@@ -31,14 +31,6 @@ class Point {
 const $ = q => document.querySelector(q);
 const $$ = q => [...document.querySelectorAll(q)]
 
-// I think I read somewhere this algorithm is biased
-function shuffle(arr) {
-    arr.forEach((item, i) => {
-        const j = Math.floor(Math.random()*arr.length);
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-    });
-}
-
 // x0 and x1 may be unordered
 function between(x, x0, x1) {
     const a = Math.min(x0, x1);
@@ -46,10 +38,24 @@ function between(x, x0, x1) {
     return x > a && x < b;
 }
 
-function slopeIntercept(x0, y0, x1, y1) {
-    let m = (y1-y0)/(x1-x0);
-    let b = y0-m*x0;
-    return [m,b]; 
+function drawText(ctx, text, p, color, font, stroke) {
+    ctx.save();
+    if (font) ctx.font = font;
+    const tm = ctx.measureText(text);
+    if (color) ctx.fillStyle = color;
+    if (p.ljust)
+        ctx.fillText(text, p.x, p.y);
+    else if (p.rjust)
+        ctx.fillText(text, p.x-tm.width, p.y);
+    else
+        ctx.fillText(text, p.x-tm.width/2, p.y);
+    if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 1;
+        ctx.strokeText(text, p.x-tm.width/2, p.y);
+    }
+    ctx.restore();
+    return tm;
 }
 
 // This hopefully takes care of vertical line slopes
@@ -78,23 +84,23 @@ function intersect(p0, p1, q0, q1) {
     return false;
 }
 
-function drawText(ctx, text, p, color, font, stroke) {
-    ctx.save();
-    if (font) ctx.font = font;
-    const tm = ctx.measureText(text);
-    if (color) ctx.fillStyle = color;
-    if (p.ljust)
-        ctx.fillText(text, p.x, p.y);
-    else if (p.rjust)
-        ctx.fillText(text, p.x-tm.width, p.y);
-    else
-        ctx.fillText(text, p.x-tm.width/2, p.y);
-    if (stroke) {
-        ctx.strokeStyle = stroke;
-        ctx.lineWidth = 1;
-        ctx.strokeText(text, p.x-tm.width/2, p.y);
-    }
-    ctx.restore();
-    return tm;
+function randomColor() {
+    const r = Math.ceil(Math.random()*3+12).toString(16);
+    const g = Math.ceil(Math.random()*3+12).toString(16);
+    const b = Math.ceil(Math.random()*3+12).toString(16);
+    return '#'+r+g+b;
 }
 
+function slopeIntercept(x0, y0, x1, y1) {
+    let m = (y1-y0)/(x1-x0);
+    let b = y0-m*x0;
+    return [m,b]; 
+}
+
+// I think I read somewhere this algorithm is biased
+function shuffle(arr) {
+    arr.forEach((item, i) => {
+        const j = Math.floor(Math.random()*arr.length);
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    });
+}

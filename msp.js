@@ -1,5 +1,5 @@
 
-import {Point} from './util.js';
+import {Point, randomColor} from './util.js';
 export {MSP};
 
 class MSP {
@@ -28,7 +28,36 @@ class MSP {
         this.center_ = p;
     }
 
+    colorize() {
+        this.rhombi.forEach(r => {
+            r.color = randomColor(); //'pink';
+        });
+    }
+
     draw(ctx) {
         this.rhombi.forEach(r => r.draw(ctx));
+        if (this.loading) {
+            this.savContext = ctx;
+        }
+    }
+
+    loadTextFromFile(file) {
+        this.loading = true;
+        fetch(file)
+        .then(resp => resp.text())
+        .then(text => {
+            const words = text.split(/\s/);
+            for (let i=0; i<this.rhombi.length && i<words.length; i++) {
+                this.rhombi[i].text = words[i];
+            }
+            this.loading = false;
+            if (this.savContext) {
+                this.draw(this.savContext);
+            }
+        })
+        .catch(err => {
+            this.loading = false;
+            console.log(err)
+        });
     }
 }

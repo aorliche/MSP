@@ -92,6 +92,12 @@ class Rhombus {
             const v = this.vs[(i+1)%this.vs.length];
             ctx.lineTo(v.x, v.y);
         }
+        if (this.color) {
+            ctx.save();
+            ctx.fillStyle = this.color;
+            ctx.fill();
+            ctx.restore();
+        }
         ctx.stroke();
         if (this.text) {
             drawText(ctx, this.text, this.center);

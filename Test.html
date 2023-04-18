@@ -6,13 +6,15 @@ import {buildRandomMSP} from './random.js';
 import {$, $$} from './util.js';
 
 window.addEventListener('load', e => {
-    const msp = buildRandomMSP(200, 200, 6, 80); 
+    const msp = buildRandomMSP(200, 200, 7, 70); 
     const canvas = $('#msp-canvas');
     const ctx = canvas.getContext('2d');
     //const msp = new MSP(rhombi);
     //msp.center = new Point(200,200);
     //console.log(msp.center);
-    msp.rhombi[0].text = 'Hello';
+    //msp.rhombi[0].text = 'Hello';
+    msp.loadTextFromFile('text/David-prison-poem.txt');
+    msp.colorize();
     msp.draw(ctx);
 });
 </script>
