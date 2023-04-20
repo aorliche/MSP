@@ -1,7 +1,7 @@
 
 import {Point, drawText} from './util.js';
 
-export {buildRhombusFromAngle, buildRhombusFromThreeVertices, makeNeighbors};
+export {buildRhombusFromAngle, buildRhombusFromThreeVertices};
 
 let rIdx = 0;
 
@@ -9,7 +9,7 @@ class Rhombus {
     constructor(vs, idx) {
         this.vs = vs;
         this.idx = idx ?? rIdx++;
-        this.neighbors = [];
+        //this.neighbors = [];
     }
 
     get center() {
@@ -42,7 +42,19 @@ class Rhombus {
         return [rv, nv];
     }
 
-    commonNeighbor(n) {
+    isNeighbor(r) {
+        let nCommon = 0;
+        for (let i=0; i<4; i++) {
+            for (let j=0; j<4; j++) {
+                if (this.vs[i].nearby(r.vs[j])) {
+                    nCommon++;
+                }
+            }
+        }
+        return nCommon == 2;
+    }
+
+    /*commonNeighbor(n) {
         for (let i=0; i<n.neighbors.length; i++) {
             const nn = n.neighbors[i];
             if (this.neighbors.includes(nn)) {
@@ -50,7 +62,7 @@ class Rhombus {
             }
         }
         return null;
-    }
+    }*/
 
     commonVertices(n) {
         const rcomm = [];
@@ -66,11 +78,12 @@ class Rhombus {
         return [rcomm, ncomm];
     }
 
-    contains(vs, p) {
+    contains(p) {
         // ray-casting algorithm based on
         // http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
 
         const x = p.x, y = p.y;
+        const vs = this.vs;
 
         let inside = false;
         for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
@@ -85,23 +98,29 @@ class Rhombus {
         return inside;
     }
 
-    draw(ctx) {
+    draw(ctx, showidx) {
+        ctx.save();
         ctx.beginPath();
         ctx.moveTo(this.vs[0].x, this.vs[0].y);
         for (let i=0; i<=this.vs.length; i++) {
             const v = this.vs[(i+1)%this.vs.length];
             ctx.lineTo(v.x, v.y);
         }
-        if (this.color) {
-            ctx.save();
+        if (this.selected) {
+            ctx.fillStyle = 'red';
+            ctx.fill();
+        } else if (this.color) {
             ctx.fillStyle = this.color;
             ctx.fill();
-            ctx.restore();
         }
         ctx.stroke();
-        if (this.text) {
+        ctx.fillStyle = 'black';
+        if (showidx) {
+            drawText(ctx, this.idx, this.center);
+        } else if (this.text) {
             drawText(ctx, this.text, this.center);
         }
+        ctx.restore();
     }
 
     innerAngleVerticesWith(n) {
@@ -118,7 +137,13 @@ class Rhombus {
         }
     }
 
-    vertexNeighbors(v) {
+    translate(d) {
+        for (let i=0; i<4; i++) {
+            this.vs[i] = this.vs[i].add(d);
+        }
+    }
+
+    /*vertexNeighbors(v) {
         const ns = [];
         this.neighbors.forEach(n => {
             for (let i=0; i<n.vs.length; i++) {
@@ -128,7 +153,7 @@ class Rhombus {
             }
         });
         return ns;
-    }
+    }*/
 }
 
 // For building rhombi in a random chain
@@ -162,7 +187,7 @@ function buildRhombusFromThreeVertices(cvs) {
     return new Rhombus(vs);
 }
 
-function makeNeighbors(r1, r2) {
+/*function makeNeighbors(r1, r2) {
     if (!r1.neighbors.includes(r2)) r1.neighbors.push(r2);
     if (!r2.neighbors.includes(r1)) r2.neighbors.push(r1);
-}
+}*/

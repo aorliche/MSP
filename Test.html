@@ -3,19 +3,51 @@
 <head>
 <script type='module'>
 import {buildRandomMSP} from './random.js';
-import {$, $$} from './util.js';
+import {$, $$, getCursorPosition} from './util.js';
 
 window.addEventListener('load', e => {
     const msp = buildRandomMSP(200, 200, 7, 70); 
     const canvas = $('#msp-canvas');
-    const ctx = canvas.getContext('2d');
+    msp.canvas = canvas;
+    //const ctx = canvas.getContext('2d');
     //const msp = new MSP(rhombi);
     //msp.center = new Point(200,200);
     //console.log(msp.center);
     //msp.rhombi[0].text = 'Hello';
     msp.loadTextFromFile('text/David-prison-poem.txt');
     msp.colorize();
-    msp.draw(ctx);
+    msp.draw();
+    msp.click = e => {
+        const p = getCursorPosition(e);
+        const sel = [];
+        msp.rhombi.forEach(r => {
+            if (r.contains(p)) {
+                r.selected = !r.selected;
+            }
+            if (r.selected) {
+                sel.push(r);
+            }
+        });
+        for (let i=0; i<sel.length; i++) {
+            for (let j=i; j<sel.length; j++) {
+                for (let k=j; k<sel.length; k++) {
+                    if (sel[i].isNeighbor(sel[j]) 
+                        && sel[j].isNeighbor(sel[k]) 
+                        && sel[i].isNeighbor(sel[k])) {
+                        sel[i].selected = false;
+                        sel[j].selected = false;
+                        sel[k].selected = false;
+                        msp.flip(sel[i], sel[j], sel[k]);
+                    }
+                }
+            }
+        }
+        msp.draw();
+    };
+    /*console.log(msp.neighbors(msp.rhombi[0]));
+    console.log(msp.neighbors(msp.rhombi[1]));
+    console.log(msp.chainsToStr());*/
+    //msp.draw(ctx);
 });
 </script>
 </head>

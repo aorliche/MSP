@@ -1,5 +1,5 @@
 
-export {Point, $, $$, drawText, intersect, shuffle, randomColor};
+export {Point, $, $$, drawText, getCursorPosition, intersect, nearby, randomColor, shuffle};
 
 class Point {
     constructor(x, y) {
@@ -21,6 +21,14 @@ class Point {
 
     nearby(p) {
         return this.dist(p) < 1e-3;
+    }
+
+    negate(p) {
+        return new Point(-this.x, -this.y);
+    }
+
+    str() {
+        return `(${this.x},${this.y})`
     }
 
     sub(p) {
@@ -58,6 +66,13 @@ function drawText(ctx, text, p, color, font, stroke) {
     return tm;
 }
 
+function getCursorPosition(e) {
+    const r = e.target.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const y = e.clientY - r.top;
+    return new Point(x, y);
+}
+
 // This hopefully takes care of vertical line slopes
 function intersect(p0, p1, q0, q1) {
     const [m0p,b0p] = slopeIntercept(p0.x, p0.y, p1.x, p1.y);
@@ -82,6 +97,12 @@ function intersect(p0, p1, q0, q1) {
         return true;
     } 
     return false;
+}
+
+function nearby(a, b) {
+    // For infinity
+    if (a == b) return true;
+    return Math.abs(a-b) < 1e-3;
 }
 
 function randomColor() {

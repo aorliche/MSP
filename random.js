@@ -1,5 +1,5 @@
 
-import {buildRhombusFromAngle, buildRhombusFromThreeVertices, makeNeighbors} from "./rhombus.js";
+import {buildRhombusFromAngle, buildRhombusFromThreeVertices} from "./rhombus.js";
 import {Point, intersect, shuffle} from "./util.js";
 import {MSP} from "./msp.js";
 
@@ -29,14 +29,14 @@ function buildInitialChain(v, m, sideLength) {
         v = r.vs[3];
     }
     // Fill in neighbors
-    for (let i=0; i<chain.length; i++) {
+    /*for (let i=0; i<chain.length; i++) {
         if (i > 0) {
             makeNeighbors(chain[i-1], chain[i]);
         }
         if (i < chain.length-1) {
             makeNeighbors(chain[i], chain[i+1]);
         }
-    }
+    }*/
     return chain;
 }
 
