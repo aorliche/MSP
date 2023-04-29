@@ -30,10 +30,15 @@ class MSP {
         this.center_ = p;
     }
 
+    get click() {
+        return this.clickFn;
+    }
+
     set click(fn) {
         if (!this.canvas) {
             return;
         }
+        this.clickFn = fn;
         this.click_ = this.canvas.addEventListener('click', fn);
     }
 
@@ -134,6 +139,13 @@ class MSP {
         r0.translate(d0);
         r1.translate(d1);
         r2.translate(d2);
+    }
+
+    loadText(text) {
+        const words = text.split(/\s/);
+        for (let i=0; i<this.rhombi.length && i<words.length; i++) {
+            this.rhombi[i].text = words[i];
+        }
     }
 
     loadTextFromFile(file) {

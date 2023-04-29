@@ -6,14 +6,9 @@ import {buildRandomMSP} from './random.js';
 import {$, $$, getCursorPosition} from './util.js';
 
 window.addEventListener('load', e => {
-    const msp = buildRandomMSP(200, 200, 7, 70); 
+    let msp = buildRandomMSP(200, 200, 7, 70); 
     const canvas = $('#msp-canvas');
     msp.canvas = canvas;
-    //const ctx = canvas.getContext('2d');
-    //const msp = new MSP(rhombi);
-    //msp.center = new Point(200,200);
-    //console.log(msp.center);
-    //msp.rhombi[0].text = 'Hello';
     msp.loadTextFromFile('text/David-prison-poem.txt');
     msp.colorize();
     msp.draw();
@@ -28,6 +23,15 @@ window.addEventListener('load', e => {
                 sel.push(r);
             }
         });
+        if ($('#word-select').checked) {
+            if (sel.length == 2) {
+                [sel[0].text, sel[1].text] = [sel[1].text, sel[0].text];
+                sel[0].selected = false;
+                sel[1].selected = false;
+            }
+            msp.draw();
+            return;
+        }
         for (let i=0; i<sel.length; i++) {
             for (let j=i; j<sel.length; j++) {
                 for (let k=j; k<sel.length; k++) {
@@ -44,15 +48,62 @@ window.addEventListener('load', e => {
         }
         msp.draw();
     };
-    /*console.log(msp.neighbors(msp.rhombi[0]));
-    console.log(msp.neighbors(msp.rhombi[1]));
-    console.log(msp.chainsToStr());*/
-    //msp.draw(ctx);
+    function clearSelect() {
+        msp.rhombi.forEach(r => r.selected = false);
+        msp.draw();
+    }
+    $('#rhombi-select').addEventListener('change', e => clearSelect());
+    $('#word-select').addEventListener('change', e => clearSelect());
+    $('#word-input-submit').addEventListener('click', e => {
+        e.preventDefault();
+        const text = $('#word-input').value;
+        msp.rhombi.forEach(r => {
+            if (r.selected) {
+                r.text = text;
+                r.selected = false;
+            }
+        });
+        msp.draw();
+    });
+    $('#poem-input-submit').addEventListener('click', e => {
+        e.preventDefault();
+        const newmsp = buildRandomMSP(200, 200, parseInt($('#msp-size').value), 70);
+        newmsp.canvas = canvas;
+        newmsp.loadText($('#poem-input').value);
+        newmsp.colorize();
+        newmsp.click = msp.click;
+        msp = newmsp;
+        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+        msp.draw();
+    });
 });
 </script>
 </head>
 <body>
 <h1>MSP Test</h1>
-<canvas id='msp-canvas' width='400' height='400'></canvas>
+<div>
+    <canvas id='msp-canvas' width='400' height='400'></canvas>
+</div>
+<div>
+    <input type='radio' id='rhombi-select' name='radio' checked>
+    <label for='rhombi-select'>Swap rhombi</label>
+    <br>
+    <input type='radio' id='word-select' name='radio'>
+    <label for='word-select'>Swap words</label> 
+</div>
+<div>
+    <label for='word-input'>Edit text:</label>
+    <input type='text' id='word-input'>
+    <button id='word-input-submit'>Change</button>
+</div>
+<div>
+    <label for='msp-size'>Size:</label>
+    <input id='msp-size' type='range' min='3' max='8' step='1' value='7'>
+    <br>
+    <label for='poem-input'>
+    <textarea id='poem-input' rows='5' cols='50'></textarea>
+    <br>
+    <button id='poem-input-submit'>Make Poem</button>
+</div>
 </body>
 </html>

@@ -106,9 +106,9 @@ function nearby(a, b) {
 }
 
 function randomColor() {
-    const r = Math.ceil(Math.random()*3+12).toString(16);
-    const g = Math.ceil(Math.random()*3+12).toString(16);
-    const b = Math.ceil(Math.random()*3+12).toString(16);
+    const r = Math.ceil(Math.random()*5+10).toString(16);
+    const g = Math.ceil(Math.random()*5+10).toString(16);
+    const b = Math.ceil(Math.random()*5+10).toString(16);
     return '#'+r+g+b;
 }
 
