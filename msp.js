@@ -42,15 +42,6 @@ class MSP {
         this.click_ = this.canvas.addEventListener('click', fn);
     }
 
-    chainsToStr(idx) {
-        if (!idx && idx !== 0) {
-            return this.chains.map(c => 
-                `${c.dydx}: ` + c.rhombi.map(r => r.idx).join(','))
-                .join('\n');
-
-        }
-    }
-
     colorize() {
         this.rhombi.forEach(r => {
             r.color = randomColor(); //'pink';
@@ -72,6 +63,7 @@ class MSP {
         }
     }
 
+    // store rhombus index, not rhombus reference
     expandChain(dydx, r0, r1) {
         let found = false;
         let added = false;
@@ -80,16 +72,16 @@ class MSP {
             // in same chain
             if (nearby(c.dydx, dydx)) {
                 found = true;
-                const idx = c.rhombi.indexOf(r0);
+                const idx = c.rhombi.indexOf(r0.idx);
                 if (idx != -1) {
-                    if (c.rhombi.includes(r1)) {
+                    if (c.rhombi.includes(r1.idx)) {
                         break;
                     }
                     if (idx == 0) {
-                        c.rhombi = [r1, ...c.rhombi];
+                        c.rhombi = [r1.idx, ...c.rhombi];
                         added = true;
                     } else if (idx == c.rhombi.length-1) {
-                        c.rhombi.push(r1);
+                        c.rhombi.push(r1.idx);
                         added = true;
                     }
                 } 
@@ -97,7 +89,7 @@ class MSP {
             }
         }
         if (!found) {
-            const c = {dydx: dydx, rhombi: [r0, r1]};
+            const c = {dydx: dydx, rhombi: [r0.idx, r1.idx]};
             this.chains.push(c);
             added = true;
         }
@@ -122,6 +114,7 @@ class MSP {
                     if (r0.vs[i].nearby(r1.vs[j]) 
                         && r0.vs[i].nearby(r2.vs[k])) {
                         cent = r0.vs[i].clone();
+                        break;
                     }
                 }
             }
@@ -129,6 +122,7 @@ class MSP {
         if (!cent) {
             return;
         }
+        this.updateChains(r0, r1, r2);
         // These are not deep copies
         const [r0r1a, r0r1b] = r0.commonVertices(r1);
         const [r0r2a, r0r2b] = r0.commonVertices(r2);
@@ -139,6 +133,13 @@ class MSP {
         r0.translate(d0);
         r1.translate(d1);
         r2.translate(d2);
+    }
+
+    load(jsonStr) {
+        const json = JSON.parse(jsonStr);
+        this.rhombi = json.rhombi;
+        this.center_ = json.center;
+        this.chains = json.chains;
     }
 
     loadText(text) {
@@ -193,5 +194,44 @@ class MSP {
             }
         });
         return ns;
+    }
+
+    save() {
+        const sav = {rhombi: this.rhombi, center: this.center_, chains: this.chains}
+        return JSON.stringify(sav);
+    }
+
+    sig() {
+        if (!this.chains) {
+            this.makeChains();
+        }
+        return JSON.stringify(this.chains);
+    }
+
+    updateChains(r0, r1, r2) {
+        function swap(chains, i0, i1) {
+            chains.forEach(c => {
+                const cr = c.rhombi;
+                for (let i=0; i<cr.length-1; i++) {
+                    if (cr[i] == i0 && cr[i+1] == i1) {
+                        [cr[i], cr[i+1]] = [i1, i0];
+                        break;
+                    }
+                    if (cr[i] == i1 && cr[i+1] == i0) {
+                        [cr[i], cr[i+1]] = [i0, i1];
+                        break;
+                    }
+                }
+            });
+        }
+        if (!this.chains) {
+            this.makeChains();
+        }
+        const i0 = r0.idx;
+        const i1 = r1.idx;
+        const i2 = r2.idx;
+        swap(this.chains, i0, i1);
+        swap(this.chains, i1, i2);
+        swap(this.chains, i0, i2);
     }
 }

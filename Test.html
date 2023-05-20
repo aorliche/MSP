@@ -81,6 +81,10 @@ window.addEventListener('load', e => {
         canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
         msp.draw();
     });
+    $('#chains').addEventListener('click', e => {
+        e.preventDefault();
+        console.log(msp.sig());
+    });
 });
 </script>
 </head>
@@ -109,6 +113,7 @@ window.addEventListener('load', e => {
     <textarea id='poem-input' rows='5' cols='50'></textarea>
     <br>
     <button id='poem-input-submit'>Make Poem</button>
+    <button id='chains'>View Chains</button>
 </div>
 </body>
 </html>
