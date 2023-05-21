@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script type='module'>
+import {$, $$} from './util.js';
+import {triplets, cullTriplets, getFlips, enumerate, mspChainsToRaw} from './enumerate.js';
+import {buildRandomMSP} from './random.js';
+
+window.addEventListener('load', e => {
+    const ta = $('#chains');
+    $('#check').addEventListener('click', e => {
+        /*let chains = ta.value.split(/\],\[|\[|\]/);
+        chains = chains.filter(c => c.length > 0);
+        chains = chains.map(c => c.split(',').map(idx => parseInt(idx)));
+        console.log(chains);
+
+        const rhombi = [1,2,3,4,5];
+        const trips = triplets(rhombi);
+        console.log(trips);
+
+        const flips = getFlips(chains, trips);
+        console.log(flips);
+
+        const db = enumerate(chains, rhombi);
+        console.log(db);*/
+    
+        let msp = buildRandomMSP(200, 200, 7, 70); 
+
+        const chains2 = mspChainsToRaw(msp.chains);
+        const rhombi = msp.rhombi.map(r => r.idx);
+        const trips2 = triplets(rhombi);
+        console.log(chains2);
+        console.log(trips2);
+        console.log(cullTriplets(chains2, trips2));
+
+        const db2 = enumerate(chains2, rhombi);
+        console.log(db2);
+    });
+});
+</script>
+<title>Enumerate Test</title>
+</head>
+<body>
+<textarea id='chains' rows='5' cols='50'></textarea>
+<button id='check'>Check</button>
+</body>
+</html>
