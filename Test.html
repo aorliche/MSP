@@ -8,15 +8,34 @@ body {
 </style>
 <script type='module'>
 import {buildRandomMSP} from './random.js';
-import {$, $$, getCursorPosition} from './util.js';
+import {$, $$, getCursorPosition, shuffle} from './util.js';
 
 window.addEventListener('load', e => {
     let msp = buildRandomMSP(200, 200, 7, 70); 
     const canvas = $('#msp-canvas');
+    let selInnerMemory = [];
     msp.canvas = canvas;
     msp.loadTextFromFile('text/David-prison-poem.txt');
     msp.colorize();
     msp.draw();
+    function getFlips(sel, howmany) {
+        const flips = [];
+        for (let i=0; i<sel.length; i++) {
+            for (let j=i; j<sel.length; j++) {
+                for (let k=j; k<sel.length; k++) {
+                    if (sel[i].isNeighbor(sel[j]) 
+                            && sel[j].isNeighbor(sel[k]) 
+                            && sel[i].isNeighbor(sel[k])) {
+                        flips.push([sel[i], sel[j], sel[k]]);
+                        if (howmany && flips.length == howmany) {
+                            return flips;
+                        }
+                    }
+                }
+            }
+        }
+        return flips;
+    }
     msp.click = e => {
         const p = getCursorPosition(e);
         const sel = [];
@@ -37,20 +56,18 @@ window.addEventListener('load', e => {
             msp.draw();
             return;
         }
-        for (let i=0; i<sel.length; i++) {
-            for (let j=i; j<sel.length; j++) {
-                for (let k=j; k<sel.length; k++) {
-                    if (sel[i].isNeighbor(sel[j]) 
-                        && sel[j].isNeighbor(sel[k]) 
-                        && sel[i].isNeighbor(sel[k])) {
-                        sel[i].selected = false;
-                        sel[j].selected = false;
-                        sel[k].selected = false;
-                        msp.flip(sel[i], sel[j], sel[k]);
-                    }
-                }
-            }
+        // Rhombus is selected above
+        if ($('#inner-select').checked) {
+            selInnerMemory = [];
+            msp.draw();
+            return;
         }
+        getFlips(sel, 1).forEach(f => {
+            f[0].selected = false;
+            f[1].selected = false;
+            f[2].selected = false;
+            msp.flip(f[0], f[1], f[2]);
+        });
         msp.draw();
     };
     function clearSelect() {
@@ -59,6 +76,60 @@ window.addEventListener('load', e => {
     }
     $('#rhombi-select').addEventListener('change', e => clearSelect());
     $('#word-select').addEventListener('change', e => clearSelect());
+    $('#inner-select').addEventListener('change', e => clearSelect());
+
+    function inMemory(flip, memory) {
+        const i1 = flip[0].idx;
+        const i2 = flip[1].idx;
+        const i3 = flip[2].idx;
+        const indices = [i1, i2, i3].sort((a, b) => a - b);
+        let found = false;
+        memory.forEach(f => {
+            if (f[0] == i1 && f[1] == i2 && f[2] == i3) {
+                found = true;
+            }
+        });
+        return found;
+    }
+
+    function addToMemory(flip, memory) {
+        const i1 = flip[0].idx;
+        const i2 = flip[1].idx;
+        const i3 = flip[2].idx;
+        const indices = [i1, i2, i3].sort((a, b) => a - b);
+        memory.push(indices);
+    }
+
+    $('#inner-cycle').addEventListener('click', e => {
+        e.preventDefault();
+        const sel = [];
+        msp.rhombi.forEach(r => {
+            if (r.selected) {
+                sel.push(r);
+            }
+        });
+        const flips = getFlips(sel);
+        shuffle(flips);
+        let flip = null;
+        for (let i=0; i<flips.length; i++) {
+            if (inMemory(flips[i], selInnerMemory)) {
+                continue;
+            }
+            addToMemory(flips[i], selInnerMemory);
+            flip = flips[i];
+            break; 
+        }
+        if (!flip && flips.length > 0) {
+            selInnerMemory = [];
+            flip = flips[Math.floor(Math.random() * flips.length)];
+            addToMemory(flip, selInnerMemory);
+        }
+        if (flip) {
+            msp.flip(flip[0], flip[1], flip[2]);
+        }
+        msp.draw();
+    });
+
     $('#word-input-submit').addEventListener('click', e => {
         e.preventDefault();
         const text = $('#word-input').value;
@@ -93,12 +164,17 @@ window.addEventListener('load', e => {
 <div>
     <canvas id='msp-canvas' width='400' height='400'></canvas>
 </div>
-<div>
+<div style='margin-bottom: 10px;'>
     <input type='radio' id='rhombi-select' name='radio' checked>
     <label for='rhombi-select'>Swap rhombi</label>
     <br>
     <input type='radio' id='word-select' name='radio'>
     <label for='word-select'>Swap words</label> 
+    <br>
+    <input type='radio' id='inner-select' name='radio'>
+    <label for='inner-select'>Select inner MSP</label>
+    <br>
+    <button id='inner-cycle'>Cycle inner MSP</button>
 </div>
 <div>
     <label for='word-input'>Edit text:</label>
