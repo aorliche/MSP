@@ -1,5 +1,6 @@
 
 import {Point, $, nearby, randomColor} from './util.js';
+import {Rhombus} from './rhombus.js';
 export {MSP};
 
 class MSP {
@@ -7,7 +8,7 @@ class MSP {
         this.rhombi = rhombi;
         this.canvas = canvas ?? null;
         this.center_ = null;
-        this.makeChains();
+        //this.makeChains();
     }
 
     get center() {
@@ -46,6 +47,26 @@ class MSP {
         this.rhombi.forEach(r => {
             r.color = randomColor(); //'pink';
         });
+    }
+
+    contains(p) {
+        for (let i=0; i<this.rhombi.length; i++) {
+            if (this.rhombi[i].contains(p)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    clone() {
+        const newRhombi = JSON.parse(JSON.stringify(this.rhombi)).map(r => {
+            r = Object.create(Rhombus.prototype, Object.getOwnPropertyDescriptors(r));
+            r.vs = r.vs.map(v => {
+                return Object.create(Point.prototype, Object.getOwnPropertyDescriptors(v));  
+            });
+            return r;
+        });
+        return new MSP(newRhombi, this.canvas);
     }
 
     draw(ctx, showidx) {

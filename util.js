@@ -1,5 +1,5 @@
 
-export {Point, $, $$, drawText, getCursorPosition, intersect, nearby, randomColor, shuffle};
+export {Point, $, $$, drawText, getCursorPosition, getFlips, intersect, nearby, randomColor, shuffle};
 
 class Point {
     constructor(x, y) {
@@ -71,6 +71,25 @@ function getCursorPosition(e) {
     const x = e.clientX - r.left;
     const y = e.clientY - r.top;
     return new Point(x, y);
+}
+    
+function getFlips(sel, howmany) {
+    const flips = [];
+    for (let i=0; i<sel.length; i++) {
+        for (let j=i; j<sel.length; j++) {
+            for (let k=j; k<sel.length; k++) {
+                if (sel[i].isNeighbor(sel[j]) 
+                        && sel[j].isNeighbor(sel[k]) 
+                        && sel[i].isNeighbor(sel[k])) {
+                    flips.push([sel[i], sel[j], sel[k]]);
+                    if (howmany && flips.length == howmany) {
+                        return flips;
+                    }
+                }
+            }
+        }
+    }
+    return flips;
 }
 
 // This hopefully takes care of vertical line slopes

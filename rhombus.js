@@ -1,7 +1,7 @@
 
 import {Point, drawText} from './util.js';
 
-export {buildRhombusFromAngle, buildRhombusFromThreeVertices};
+export {buildRhombusFromAngle, buildRhombusFromThreeVertices, Rhombus};
 
 let rIdx = 0;
 

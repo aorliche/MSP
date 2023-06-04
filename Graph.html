@@ -1,0 +1,106 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body {
+    background-color: pink;
+}
+</style>
+<script type='module'>
+import {buildRandomMSP} from './random.js';
+import {Point, $, $$, getCursorPosition, getFlips} from './util.js';
+
+window.addEventListener('load', e => {
+    let msp = buildRandomMSP(500, 300, 5, 50); 
+    const canvas = $('#msp-canvas');
+    msp.canvas = canvas;
+    msp.colorize();
+    msp.draw(null, true);
+    let targets = [];
+
+    function update() {
+        targets = [];
+        const flips = getFlips(msp.rhombi);
+        for (let i = 0; i < flips.length; i++) {
+            const target = msp.clone();
+            const remapedFlip = [];
+            flips[i].forEach(r => {
+                target.rhombi.forEach(rr => {
+                    if (rr.idx == r.idx) {
+                        remapedFlip.push(rr);
+                    }
+                })
+            });
+            target.flip(remapedFlip[0], remapedFlip[1], remapedFlip[2]);
+            target.canvas = canvas;
+            const dx = 220*Math.sin(2*Math.PI*i/flips.length);
+            const dy = 220*Math.cos(2*Math.PI*i/flips.length);
+            target.center = target.center.add(new Point(dx, dy));
+            target.draw(null, true);
+            drawArrow(msp.center.add(new Point(dx/2.2, dy/2.2)), msp.center.add(new Point(dx/1.8, dy/1.8)));
+            targets.push(target);
+        }
+    }
+
+    // https://stackoverflow.com/questions/808826/draw-arrow-on-canvas-tag
+    function drawArrow(from, to) {
+        const headlen = 10; // length of head in pixels
+        const ctx = canvas.getContext('2d');
+        ctx.beginPath();
+        var dx = to.x - from.x;
+        var dy = to.y - from.y;
+        var angle = Math.atan2(dy, dx);
+        ctx.moveTo(from.x, from.y);
+        ctx.lineTo(to.x, to.y);
+        ctx.lineTo(to.x - headlen * Math.cos(angle - Math.PI / 6), to.y - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(to.x, to.y);
+        ctx.lineTo(to.x - headlen * Math.cos(angle + Math.PI / 6), to.y - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.save();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    update();
+
+    canvas.addEventListener('click', e => {
+        const p = getCursorPosition(e);
+        let chosen = null;
+        targets.forEach(t => {
+            if (t.contains(p)) {
+                chosen = t;
+            } 
+        });
+        if (chosen) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const center = msp.center;
+            msp = chosen;
+            msp.center = center;
+            msp.draw(null, true);
+            update();
+        }
+    });
+
+    // TODO: add highlighting
+    canvas.addEventListener('mousemove', e => {
+        const p = getCursorPosition(e);
+        targets.forEach(t => {
+            if (t.contains(p)) {
+                console.log(p);
+            } 
+        });
+    });
+});
+</script>
+</head>
+<body>
+<h1>MSP Test</h1>
+<div>
+    <canvas id='msp-canvas' width='1000' height='600'></canvas>
+</div>
+</body>
+</html>
+
