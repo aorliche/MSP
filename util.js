@@ -1,5 +1,5 @@
 
-export {Point, $, $$, drawText, getCursorPosition, getFlips, intersect, nearby, randomColor, shuffle};
+export {Point, $, $$, drawText, fillCircle, getCursorPosition, getFlips, intersect, nearby, randomColor, shuffle, strokeCircle};
 
 class Point {
     constructor(x, y) {
@@ -144,3 +144,24 @@ function shuffle(arr) {
         [arr[i], arr[j]] = [arr[j], arr[i]];
     });
 }
+
+function fillCircle(ctx, c, r, color) {
+    ctx.save();
+	ctx.fillStyle = color;
+	ctx.beginPath();
+	ctx.arc(c.x, c.y, r, 0, 2*Math.PI);
+	ctx.closePath();
+	ctx.fill();
+    ctx.restore();
+}
+
+function strokeCircle(ctx, c, r, color) {
+    ctx.save();
+	ctx.strokeStyle = color;
+	ctx.beginPath();
+	ctx.arc(c.x, c.y, r, 0, 2*Math.PI);
+	ctx.closePath();
+	ctx.stroke();
+    ctx.restore();
+}
+

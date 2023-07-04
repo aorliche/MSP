@@ -109,7 +109,7 @@ class Rhombus {
         if (this.selected) {
             ctx.fillStyle = 'red';
             ctx.fill();
-        } else if (this.color) {
+        } else if (this.color && !this.transparent) {
             ctx.fillStyle = this.color;
             ctx.fill();
         }

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body {
+    background-color: black;
+    color: white;
+}
+canvas {
+    border: 1px solid black;
+}
+</style>
+<script type='module'>
+import {buildRandomMSP} from './random.js';
+import {$, $$, getCursorPosition, Point, fillCircle, intersect, strokeCircle} from './util.js';
+
+class StrokePoint extends Point {
+    constructor(x, y, canvas) {
+        super(x, y);
+        this.canvas = canvas;
+        this.ctx = canvas ? canvas.getContext('2d') : null;
+    }
+
+    contains(p) {
+        return p.dist(this) < 10;
+    }
+
+    draw(ctx, color) {
+        if (!ctx) {
+            ctx = this.ctx;
+        }
+        color = color || 'red';
+        const cp = new Point(this.x-0.5, this.y-0.5);
+        fillCircle(ctx, cp, 5, color);
+        strokeCircle(ctx, this, 8, color);
+    }
+
+    move(p) {
+        this.x = p.x;
+        this.y = p.y;
+    }
+}
+
+class StrokeSegment {
+    constructor(points, canvas) {
+        this.points = points ?? [];
+        this.ctx = canvas ? canvas.getContext('2d') : null;
+    }
+
+    addPoint(p) {
+        this.points.push(p);
+    }
+
+    draw(ctx) {
+        if (!ctx) {
+            ctx = this.ctx;
+        }
+        for (let i=0; i<this.points.length; i++) {
+            this.points[i].draw();
+            if (this.points[i] == this.selected) {
+                this.points[i].draw(null, 'orange');
+            }
+            if (i == 0) {
+                continue;
+            }
+            ctx.save();
+            ctx.strokeStyle = 'red';
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(this.points[i-1].x, this.points[i-1].y);
+            ctx.lineTo(this.points[i].x, this.points[i].y);
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
+
+    getPoint(p) {
+        for (let i=0; i<this.points.length; i++) {
+            if (this.points[i].contains(p)) {
+                return this.points[i];
+            }
+        }
+        return null;
+    }
+
+    removePoint(p) {
+        const idx = this.points.indexOf(p);
+        if (idx < 0) {
+            return;
+        }
+        this.points.splice(idx, 1);
+    }
+}
+
+function newMSP(canvas) {
+    let msp = buildRandomMSP(200, 200, 20, 30); 
+    msp.canvas = canvas;
+    msp.colorize();
+    msp.draw();
+    return msp;
+}
+
+const letterStrokes = {};
+const letterImages = {};
+
+function saveStrokes(letter, strokes, canvas) {
+    const json = JSON.stringify(strokes, (k, v) => {
+        if (k == 'ctx' || k == 'canvas' || k == 'moving' || k == 'selected') {
+            return;
+        }
+        return v;
+    });
+    letterStrokes[letter] = json;
+    letterImages[letter] = canvas.toDataURL();
+}
+
+function regenImages() {
+    const letters = [];
+    for (let letter in letterStrokes) {
+        letters.push(letter);
+    }
+    letters.sort();
+    $('#images').innerHTML = '';
+    for (let letter of letters) {
+        const img = new Image();
+        img.src = letterImages[letter];
+        img.width = '100';
+        $('#images').appendChild(img);
+    }
+}
+
+window.addEventListener('load', e => {
+    const canvas = $('#msp-canvas');
+    const strokes = [];
+    let stroke;
+    let msp = newMSP(canvas);
+    addStroke();
+    canvas.addEventListener('click', e1 => {
+        const p = getCursorPosition(e1);
+        if (stroke.getPoint(p)) {
+            return;
+        }
+        const sp = new StrokePoint(p.x, p.y, canvas);
+        stroke.addPoint(sp);
+        stroke.selected = sp;
+        repaint();
+    });
+    canvas.addEventListener('mousedown', e1 => {
+        const p = getCursorPosition(e1);
+        const sp = stroke.getPoint(p);
+        if (!sp) {
+            return;
+        }
+        stroke.selected = sp;
+        stroke.moving = sp;
+    });
+    canvas.addEventListener('mousemove', e1 => {
+        const p = getCursorPosition(e1);
+        if (stroke.moving) {
+            stroke.moving.move(p);
+            repaint();
+        }
+    });
+    canvas.addEventListener('mouseout', e1 => {
+        stroke.moving = null; 
+    });
+    canvas.addEventListener('mouseup', e1 => {
+        stroke.moving = null;
+    });
+    $('#remove').addEventListener('click', e1=> {
+        e1.preventDefault();
+        if (!stroke.selected) {
+            return;
+        }
+        stroke.removePoint(stroke.selected);
+        stroke.selected = null;
+        repaint();
+    });
+    $('#invert').addEventListener('change', e1=> {
+        repaint();
+    });
+    $('#add-stroke').addEventListener('click', e1=> {
+        e1.preventDefault();
+        addStroke();
+        repaint();
+    });
+    $('#delete-stroke').addEventListener('click', e1=> {
+        e1.preventDefault();
+        if (strokes.length == 0) {
+            return;
+        }
+        const idx = $('#stroke-select').selectedIndex;
+        strokes.splice(idx, 1);
+        $('#stroke-select').remove(idx);
+        if (strokes.length == 0) {
+            addStroke();
+        } else {
+            stroke = strokes[0];
+        }
+        repaint();
+    })
+    $('#stroke-select').addEventListener('change', e1=> {
+        stroke = strokes[$('#stroke-select').selectedIndex];
+        repaint();
+    });
+    $('#save').addEventListener('click', e1=> {
+        e1.preventDefault();
+        const letter = $('#letter').value;
+        saveStrokes(letter, strokes, canvas);
+        regenImages();
+    });
+    function addStroke() {
+        stroke = new StrokeSegment([], canvas);
+        strokes.push(stroke);
+        const opt = document.createElement('option');
+        opt.innerHTML = strokes.length;
+        $('#stroke-select').appendChild(opt);
+        $('#stroke-select').selectedIndex = strokes.length-1;
+    }
+    function repaint() {
+        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+        msp.rhombi.forEach(r => {
+            r.transparent = false;
+            strokes.forEach(stroke => {
+                for (let i=0; i<stroke.points.length-1; i++) {
+                    for (let j=0; j<3; j++) {
+                        if (intersect(r.vs[j], r.vs[j+1], stroke.points[i], stroke.points[i+1])) {
+                            r.transparent = true;
+                        }
+                    }
+                }
+            });
+        });
+        if ($('#invert').checked) {
+            msp.rhombi.forEach(r => {
+                r.transparent = !r.transparent;
+            });
+        }
+        msp.draw();
+        stroke.draw();
+    }
+});
+</script>
+</head>
+<body>
+<h1>MSP Test</h1>
+<div style='display: inline-flex;'>
+    <div>
+        <div>
+            <canvas id='msp-canvas' width='400' height='400'></canvas>
+        </div>
+        <div>
+            <button id='remove'>Remove</button>
+            <label for='invert'>Invert</label>
+            <input type='checkbox' id='invert' name='invert'>
+            <button id='add-stroke'>Add Stroke</button>
+            <select id='stroke-select'></select>
+            <button id='delete-stroke'>Delete Stroke</button>
+            <label for='letter'>Letter</label>
+            <input type='text' id='letter' name='letter' value='A' size='3'>
+            <button id='save'>Save</button>
+        </div>
+    </div>
+    <div id='images'></div>
+</body>
+</html>
