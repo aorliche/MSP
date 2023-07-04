@@ -12,7 +12,7 @@ canvas {
 </style>
 <script type='module'>
 import {buildRandomMSP} from './random.js';
-import {$, $$, getCursorPosition, Point, fillCircle, intersect, strokeCircle} from './util.js';
+import {$, $$, dataURItoAB, download, getCursorPosition, Point, fillCircle, intersect, strokeCircle} from './util.js';
 
 class StrokePoint extends Point {
     constructor(x, y, canvas) {
@@ -112,6 +112,8 @@ function saveStrokes(letter, strokes, canvas) {
     });
     letterStrokes[letter] = json;
     letterImages[letter] = canvas.toDataURL();
+    download(json, `${letter}.json`, 'application/json');
+    download(dataURItoAB(letterImages[letter]), `${letter}.png`, 'image/png');
 }
 
 function regenImages() {
@@ -206,7 +208,10 @@ window.addEventListener('load', e => {
     $('#save').addEventListener('click', e1=> {
         e1.preventDefault();
         const letter = $('#letter').value;
+        stroke = null;
+        repaint();
         saveStrokes(letter, strokes, canvas);
+        stroke = strokes[0];
         regenImages();
     });
     function addStroke() {
@@ -237,7 +242,9 @@ window.addEventListener('load', e => {
             });
         }
         msp.draw();
-        stroke.draw();
+        if (stroke) {
+            stroke.draw();
+        }
     }
 });
 </script>

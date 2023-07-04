@@ -1,5 +1,5 @@
 
-export {Point, $, $$, drawText, fillCircle, getCursorPosition, getFlips, intersect, nearby, randomColor, shuffle, strokeCircle};
+export {Point, $, $$, dataURItoAB, download, drawText, fillCircle, getCursorPosition, getFlips, intersect, nearby, randomColor, shuffle, strokeCircle};
 
 class Point {
     constructor(x, y) {
@@ -163,5 +163,37 @@ function strokeCircle(ctx, c, r, color) {
 	ctx.closePath();
 	ctx.stroke();
     ctx.restore();
+}
+
+// https://stackoverflow.com/questions/34156282/how-do-i-save-json-to-local-text-file
+function download(content, fileName, contentType) {
+    var a = document.createElement("a");
+    var file = new Blob([content], {type: contentType});
+    a.href = URL.createObjectURL(file);
+    a.download = fileName;
+    a.click();
+}
+
+// https://stackoverflow.com/questions/12168909/blob-from-dataurl 
+function dataURItoAB(dataURI) {
+    // convert base64 to raw binary data held in a string
+    // doesn't handle URLEncoded DataURIs - see SO answer #6850276 for code that does this
+    var byteString = atob(dataURI.split(',')[1]);
+
+    // separate out the mime component
+    var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0]
+
+    // write the bytes of the string to an ArrayBuffer
+    var ab = new ArrayBuffer(byteString.length);
+
+    // create a view into the buffer
+    var ia = new Uint8Array(ab);
+
+    // set the bytes of the buffer to the correct values
+    for (var i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+
+    return ab;
 }
 
