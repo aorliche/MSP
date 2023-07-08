@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body {
+    background-color: black;
+    color: white;
+}
+canvas {
+    border: 1px solid white;
+}
+#dragging-div {
+    display: inline-flex;
+}
+#dragging-img {
+    display: block;
+    position: fixed;
+    z-index: 1;
+}
+#controls, #images {
+    border: 1px solid white;
+    width: 120px;
+}
+#controls {
+    padding: 5px;
+}
+</style>
+<script type='module'>
+import {buildRandomMSP} from './random.js';
+import {loadLetter, StrokePoint, StrokeSegment} from './stroke.js';
+import {$, $$, dataURItoAB, download, getCursorPosition, Point, fillCircle, intersect, strokeCircle} from './util.js';
+
+window.addEventListener('load', e => {
+    const images = $('#images');
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const letterStrokes = {loaded: 0};
+    const draggingImg = $('#dragging-img');
+    const msps = [];
+    let dragging = null;    // Dragging from letter selection panel to place first time
+    let moving = null;      // Moving around on the canvas
+    let selected = null;    // Last one clicked on the canvas
+    letters.split('').forEach(letter => {
+        const img = new Image();
+        img.src = `strokes/images/${letter}.png`;
+        img.width = 40;
+        images.appendChild(img);
+        img.addEventListener('mousedown', e1 => {
+            e1.preventDefault();
+            dragging = letter;
+            draggingImg.src = img.src;
+            draggingImg.style.display = 'block';
+            draggingImg.style.top = e1.clientY + 1 + 'px';
+            draggingImg.style.left = e1.clientX + 1 + 'px';
+        });
+        loadLetter(`strokes/json/${letter}.json`, letter, letterStrokes);
+    });
+    $('#canvas').addEventListener('mousedown', e1 => {
+        const p = getCursorPosition(e1);
+        selected = null;
+        for (let i=0; i<msps.length; i++) {
+            const msp = msps[i];
+            if (msp.contains(p)) {
+                moving = msp;
+                selected = msp;
+                return;
+            }
+        }
+        repaint();
+    });
+    $('#canvas').addEventListener('mousemove', e1 => {
+        if (!moving) return;
+        const p = getCursorPosition(e1);
+        moving.translate(p.x, p.y);
+        repaint();
+    });
+    $('#canvas').addEventListener('mouseup', e1 => {
+        const p = getCursorPosition(e1);
+        if (dragging) {
+            placeLetter(p, letterStrokes[dragging]);
+            draggingImg.style.display = 'none';
+            dragging = null;
+        } else if (moving) {
+            moving = null;
+        }
+    });
+    $('#canvas').addEventListener('mouseleave', e1 => {
+        moving = null;
+    });
+    $('#dragging-div').addEventListener('mousemove', e1 => {
+        if (!dragging) return;
+        draggingImg.style.top = e1.clientY + 2 + 'px';
+        draggingImg.style.left = e1.clientX + 2 + 'px';
+    });
+    $('#dragging-div').addEventListener('mouseup', e1 => {
+        if (e1.target == $('#canvas')) return;
+        draggingImg.style.display = 'none';
+        dragging = null;
+    });
+    $('#dragging-div').addEventListener('mouseleave', e1 => {
+        draggingImg.style.display = 'none';
+        dragging = null;
+    });
+    $('#delete').addEventListener('click', e1 => {
+        if (!selected) return;
+        e1.preventDefault();
+        msps.splice(msps.indexOf(selected), 1);
+        repaint();
+    });
+    function placeLetter(p, letterStrokes) {
+        const msp = buildRandomMSP(200, 200, 20, 30);
+        letterStrokes.forEach(seg => {
+            seg.strokeMSP(msp);
+        });
+        msp.scale(0.1);
+        msp.translate(p.x+20, p.y+20);
+        msp.canvas = $('#canvas');
+        msp.colorize();
+        msp.linewidth = 0.1;
+        if ($('#invert').checked) {
+            msp.rhombi.forEach(r => {
+                r.transparent = !r.transparent;
+            });
+        }
+        msp.draw();
+        msps.push(msp);
+    }
+    function repaint() {
+        const canvas = $('#canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        msps.forEach(msp => {
+            msp.draw();
+            if (msp == selected) {
+                const center = msp.center;
+                ctx.save();
+                ctx.strokeStyle = 'red';
+                ctx.strokeRect(center.x-20, center.y-20, 40, 40);
+                ctx.restore();
+            }
+        });
+    }
+});
+</script>
+<title>Place Test</title>
+</head>
+<body>
+<h1>Place Test</h1>
+<div id='dragging-div'>
+    <img id='dragging-img' width='40'>
+    <canvas id='canvas' width='600' height='600'></canvas>
+    <div id='images'></div>
+    <div id='controls'>
+        <input type='checkbox' checked id='invert' name='invert'>
+        <label for='invert'>Invert</label>
+        <br>
+        <button id='delete' name='delete'>Delete</button>
+    </div>
+</div>
+</body>
+</html>

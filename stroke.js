@@ -1,6 +1,6 @@
 
-import {Point, fillCircle, strokeCircle} from './util.js';
-export {StrokePoint, StrokeSegment};
+import {Point, fillCircle, intersect, strokeCircle} from './util.js';
+export {loadLetter, StrokePoint, StrokeSegment};
 
 class StrokePoint extends Point {
     constructor(x, y, canvas) {
@@ -78,13 +78,29 @@ class StrokeSegment {
         }
         this.points.splice(idx, 1);
     }
+
+    strokeMSP(msp) {
+        msp.rhombi.forEach(r => {
+            for (let i=0; i<this.points.length-1; i++) {
+                for (let j=0; j<3; j++) {
+                    if (intersect(r.vs[j], r.vs[j+1], this.points[i], this.points[i+1])) {
+                        r.transparent = true;
+                    }
+                }
+            }
+        });
+    }
 }
 
-function loadLetter(file) {
+function loadLetter(file, letter, letters) {
     fetch(file)
     .then(r => r.json())
     .then(json => {
-
+        letters[letter] = json.map(segs => {
+            return Object.create(StrokeSegment.prototype, 
+                Object.getOwnPropertyDescriptors(segs));
+        });
+        letters['loaded'] += 1;
     })
     .catch(err => console.log(err));
 }

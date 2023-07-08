@@ -161,6 +161,12 @@ class MSP {
         r2.translate(d2);
     }
 
+    invert() {
+        this.rhombi.forEach(r => {
+            r.transparent = !r.transparent;
+        });
+    }
+
     load(jsonStr) {
         const json = JSON.parse(jsonStr);
         this.rhombi = json.rhombi;
@@ -248,7 +254,7 @@ class MSP {
 
     translate(x, y) {
         const c = this.center;
-        const dx = x-this.center.y;
+        const dx = x-this.center.x;
         const dy = y-this.center.y;
         this.rhombi.forEach(r => {
             r.vs.forEach(v => {
@@ -256,6 +262,7 @@ class MSP {
                 v.y += dy;
             });
         });
+        this.center_ = null;
     }
 
     updateChains(r0, r1, r2) {
