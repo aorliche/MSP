@@ -77,7 +77,12 @@ class MSP {
                 throw new Error('No context');
             }
         }
+        ctx.save();
+        if (this.linewidth) {
+            ctx.lineWidth = this.linewidth;
+        }
         this.rhombi.forEach(r => r.draw(ctx, showidx));
+        ctx.restore();
         if (this.loading) {
             this.savContext = ctx;
             this.showIdx = showidx;
@@ -222,11 +227,35 @@ class MSP {
         return JSON.stringify(sav);
     }
 
+    scale(factor) {
+        const c = this.center;
+        this.rhombi.forEach(r => {
+            r.vs.forEach(v => {
+                const dx = factor*(v.x-this.center.x);
+                const dy = factor*(v.y-this.center.y);
+                v.x = this.center.x+dx;
+                v.y = this.center.y+dy;
+            });
+        });
+    }
+
     sig() {
         if (!this.chains) {
             this.makeChains();
         }
         return JSON.stringify(this.chains);
+    }
+
+    translate(x, y) {
+        const c = this.center;
+        const dx = x-this.center.y;
+        const dy = y-this.center.y;
+        this.rhombi.forEach(r => {
+            r.vs.forEach(v => {
+                v.x += dx;
+                v.y += dy;
+            });
+        });
     }
 
     updateChains(r0, r1, r2) {
