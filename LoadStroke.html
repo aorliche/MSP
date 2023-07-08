@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body {
+    background-color: black;
+    color: white;
+}
+canvas {
+    border: 1px solid black;
+}
+</style>
+<script type='module'>
+import {buildRandomMSP} from './random.js';
+import {StrokePoint, StrokeSegment} from './stroke.js';
+import {$, $$, dataURItoAB, download, getCursorPosition, Point, fillCircle, intersect, strokeCircle} from './util.js';
+
+
