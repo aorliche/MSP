@@ -17,14 +17,14 @@ canvas {
     position: fixed;
     z-index: 1;
 }
-#controls, #images {
+#controls, #images, #prior-div {
     border: 1px solid white;
     width: 120px;
 }
-#controls {
+#controls, #prior-div {
     padding: 5px;
 }
-#recording {
+#recording, #prior {
     width: 100px;
 }
 </style>
@@ -38,11 +38,29 @@ window.addEventListener('load', e => {
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     const letterStrokes = {loaded: 0};
     const draggingImg = $('#dragging-img');
+    const prior = [];       // Prior recordings
     let msps = [];
     let recording = [];
     let dragging = null;    // Dragging from letter selection panel to place first time
     let moving = null;      // Moving around on the canvas
     let selected = null;    // Last one clicked on the canvas
+    fetch('PublishRetriever.php')
+    .then(res => res.json())
+    .then(json => {
+        if (json.error) {
+            alert(json.error);
+            return;
+        }
+        json.forEach(item => {
+            const opt = document.createElement('option');
+            opt.innerText = item.name;
+            $('#prior').appendChild(opt);
+            prior.push(item.json);
+        });
+    })
+    .catch(e => {
+        console.error(e);
+    });
     letters.split('').forEach(letter => {
         const img = new Image();
         img.src = `strokes/images/${letter}.png`;
@@ -136,6 +154,43 @@ window.addEventListener('load', e => {
         $('#recording').innerHTML = '';
         repaint();
     });
+    $('#publish').addEventListener('click', e1 => {
+        e1.preventDefault();
+        const name = $('#docname').value;
+        if (recording.length == 0) {
+            alert('Nothing recorded');
+            return;
+        }
+        if (!name) {
+            alert('Please enter a name');
+            return;
+        }
+        fetch('PublishHelper.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({name, recording: JSON.stringify(recording)}),
+        })
+        .then(res => res.text())
+        .then(data => {
+            prior.push(recording.slice());
+            const opt = document.createElement('option');
+            opt.innerText = name;
+            $('#prior').appendChild(opt);
+            alert(data);
+        })
+        .catch(e => {
+            alert(e);
+        });
+    });
+    $('#prior').addEventListener('change', e1 => {
+        recording = prior[$('#prior').selectedIndex];
+        $('#recording').innerHTML = '';
+        recording.forEach(item => {
+            const opt = document.createElement('option');
+            opt.innerText = item.name;
+            $('#recording').appendChild(opt);
+        });
+    });
     function placeLetter(p, letterStrokes) {
         const msp = buildRandomMSP(200, 200, 20, 30);
         letterStrokes.forEach(seg => {
@@ -174,6 +229,9 @@ window.addEventListener('load', e => {
         recording.push(entry);
         const opt = document.createElement('option');
         opt.innerText = entry.name;
+        if (entry.name == 'Place') {
+            opt.innerText += ' ' + entry.letter;
+        }
         $('#recording').appendChild(opt);
     }
     function replay(i) {
@@ -211,10 +269,10 @@ window.addEventListener('load', e => {
     }
 });
 </script>
-<title>Place Test</title>
+<title>MSP Publishing</title>
 </head>
 <body>
-<h1>Place Test</h1>
+<h1>MSP Publishing</h1>
 <div id='dragging-div'>
     <img id='dragging-img' width='40'>
     <canvas id='canvas' width='600' height='600'></canvas>
@@ -230,7 +288,16 @@ window.addEventListener('load', e => {
         <br>
         <button id='replay' name='replay'>Replay</button>
         <button id='clear' name='clear'>Start Over</button>
-        <select multiple id='recording' size='20'></select>
+        <select multiple id='recording' size='16'></select>
+        <br>
+        <label for='docname'>Document Name:</label>
+        <input type='text' id='docname' name='docname'>
+        <br>
+        <button id='publish' name='publish'>Publish</button>
+    </div>
+    <div id='prior-div'>
+        <label for='prior'>Prior Work:</label>
+        <select multiple id='prior' name='prior' size='16'></select>
     </div>
 </div>
 </body>
