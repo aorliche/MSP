@@ -69,6 +69,22 @@ class MSP {
         return new MSP(newRhombi, this.canvas);
     }
 
+    get dim() {
+        let minx = 10000;
+        let miny = 10000;
+        let maxx = 0;
+        let maxy = 0;
+        this.rhombi.forEach(r => {
+            r.vs.forEach(p => {
+                if (p.x < minx) minx = p.x;
+                if (p.x > maxx) maxx = p.x;
+                if (p.y < miny) miny = p.y;
+                if (p.y > maxy) maxy = p.y;
+            });
+        });
+        return new Point(maxx-minx, maxy-miny);
+    }
+
     draw(ctx, showidx) {
         if (!ctx) {
             if (this.canvas) {

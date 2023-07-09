@@ -24,6 +24,9 @@ canvas {
 #controls {
     padding: 5px;
 }
+#recording {
+    width: 100px;
+}
 </style>
 <script type='module'>
 import {buildRandomMSP} from './random.js';
@@ -35,7 +38,8 @@ window.addEventListener('load', e => {
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     const letterStrokes = {loaded: 0};
     const draggingImg = $('#dragging-img');
-    const msps = [];
+    let msps = [];
+    let recording = [];
     let dragging = null;    // Dragging from letter selection panel to place first time
     let moving = null;      // Moving around on the canvas
     let selected = null;    // Last one clicked on the canvas
@@ -62,7 +66,7 @@ window.addEventListener('load', e => {
             if (msp.contains(p)) {
                 moving = msp;
                 selected = msp;
-                return;
+                break;
             }
         }
         repaint();
@@ -77,9 +81,11 @@ window.addEventListener('load', e => {
         const p = getCursorPosition(e1);
         if (dragging) {
             placeLetter(p, letterStrokes[dragging]);
+            record({name: 'Place', p, letter: dragging});
             draggingImg.style.display = 'none';
             dragging = null;
         } else if (moving) {
+            record({name: 'Move', p, idx: msps.indexOf(moving)});
             moving = null;
         }
     });
@@ -103,7 +109,31 @@ window.addEventListener('load', e => {
     $('#delete').addEventListener('click', e1 => {
         if (!selected) return;
         e1.preventDefault();
+        record({name: 'Delete', idx: msps.indexOf(selected)});
         msps.splice(msps.indexOf(selected), 1);
+        repaint();
+    });
+    $('#shrink').addEventListener('click', e1 => {
+        if (!selected) return;
+        e1.preventDefault();
+        record({name: 'Shrink', idx: msps.indexOf(selected)});
+        selected.scale(0.8);
+        repaint();
+    });
+    $('#expand').addEventListener('click', e1 => {
+        if (!selected) return;
+        e1.preventDefault();
+        record({name: 'Expand', idx: msps.indexOf(selected)});
+        selected.scale(1.2);
+        repaint();
+    });
+    $('#replay').addEventListener('click', e1 => {
+        replay(0);
+    });
+    $('#clear').addEventListener('click', e1 => {
+        msps = [];
+        recording = [];
+        $('#recording').innerHTML = '';
         repaint();
     });
     function placeLetter(p, letterStrokes) {
@@ -132,12 +162,52 @@ window.addEventListener('load', e => {
             msp.draw();
             if (msp == selected) {
                 const center = msp.center;
+                const dim = msp.dim;
                 ctx.save();
                 ctx.strokeStyle = 'red';
-                ctx.strokeRect(center.x-20, center.y-20, 40, 40);
+                ctx.strokeRect(center.x-dim.x/2, center.y-dim.y/2, dim.x, dim.y);
                 ctx.restore();
             }
         });
+    }
+    function record(entry) {
+        recording.push(entry);
+        const opt = document.createElement('option');
+        opt.innerText = entry.name;
+        $('#recording').appendChild(opt);
+    }
+    function replay(i) {
+        if (i >= recording.length) return;
+        if (i == 0) {
+            msps = [];
+            repaint();
+        }
+        const entry = recording[i];
+        switch (entry.name) {
+            case 'Place': {
+                placeLetter(entry.p, letterStrokes[entry.letter]);
+                break;
+            }
+            case 'Move': {
+                msps[entry.idx].translate(entry.p.x, entry.p.y);
+                break;
+            }
+            case 'Delete': {
+                msps.splice(entry.idx, 1);
+                break;
+            }
+            case 'Shrink': {
+                msps[entry.idx].scale(0.8);
+                break;
+            }
+            case 'Expand': {
+                msps[entry.idx].scale(1.2);
+                break;
+            }
+        }
+        $('#recording').selectedIndex = i;
+        repaint(); 
+        setTimeout(() => replay(i+1), 500);
     }
 });
 </script>
@@ -154,6 +224,13 @@ window.addEventListener('load', e => {
         <label for='invert'>Invert</label>
         <br>
         <button id='delete' name='delete'>Delete</button>
+        <br>
+        <button id='shrink' name='shrink'>Shrink</button>
+        <button id='expand' name='expand'>Expand</button>
+        <br>
+        <button id='replay' name='replay'>Replay</button>
+        <button id='clear' name='clear'>Start Over</button>
+        <select multiple id='recording' size='20'></select>
     </div>
 </div>
 </body>
