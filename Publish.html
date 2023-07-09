@@ -99,7 +99,7 @@ window.addEventListener('load', e => {
         const p = getCursorPosition(e1);
         if (dragging) {
             placeLetter(p, letterStrokes[dragging]);
-            record({name: 'Place', p, letter: dragging});
+            record({name: 'Place', p, letter: dragging, invert: $('#invert').checked});
             draggingImg.style.display = 'none';
             dragging = null;
         } else if (moving) {
@@ -243,7 +243,10 @@ window.addEventListener('load', e => {
         const entry = recording[i];
         switch (entry.name) {
             case 'Place': {
+                const sav = $('#invert').checked;
+                $('#invert').checked = entry.invert;
                 placeLetter(entry.p, letterStrokes[entry.letter]);
+                $('#invert').checked = sav;
                 break;
             }
             case 'Move': {
