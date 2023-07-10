@@ -103,7 +103,10 @@ window.addEventListener('load', e => {
             draggingImg.style.display = 'none';
             dragging = null;
         } else if (moving) {
+            const p = getCursorPosition(e1);
+            moving.translate(p.x, p.y);
             record({name: 'Move', p, idx: msps.indexOf(moving)});
+            repaint();
             moving = null;
         }
     });
@@ -135,14 +138,14 @@ window.addEventListener('load', e => {
         if (!selected) return;
         e1.preventDefault();
         record({name: 'Shrink', idx: msps.indexOf(selected)});
-        selected.scale(0.8);
+        selected.scale(0.66);
         repaint();
     });
     $('#expand').addEventListener('click', e1 => {
         if (!selected) return;
         e1.preventDefault();
         record({name: 'Expand', idx: msps.indexOf(selected)});
-        selected.scale(1.2);
+        selected.scale(1.5);
         repaint();
     });
     $('#replay').addEventListener('click', e1 => {
@@ -258,11 +261,11 @@ window.addEventListener('load', e => {
                 break;
             }
             case 'Shrink': {
-                msps[entry.idx].scale(0.8);
+                msps[entry.idx].scale(0.66);
                 break;
             }
             case 'Expand': {
-                msps[entry.idx].scale(1.2);
+                msps[entry.idx].scale(1.5);
                 break;
             }
         }
