@@ -226,6 +226,9 @@ window.addEventListener('load', e => {
         placeLetter(p, letterStrokes[key]);
         record({name: 'Place', p, letter: key, invert: $('#invert').checked});
     });
+    $('#docname').addEventListener('keydown', e1 => {
+        e1.stopPropagation();
+    });
     function placeLetter(p, letterStrokes) {
         const msp = buildRandomMSP(200, 200, 20, 30);
         letterStrokes.forEach(seg => {
