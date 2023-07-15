@@ -222,8 +222,9 @@ window.addEventListener('load', e => {
             maxX = 0;
             maxY += 40;
         }
-        placeLetter(new Point(maxX, maxY), letterStrokes[key]);
-        record({name: 'Place', p, letter: dragging, invert: $('#invert').checked});
+        const p = new Point(maxX, maxY);
+        placeLetter(p, letterStrokes[key]);
+        record({name: 'Place', p, letter: key, invert: $('#invert').checked});
     });
     function placeLetter(p, letterStrokes) {
         const msp = buildRandomMSP(200, 200, 20, 30);
