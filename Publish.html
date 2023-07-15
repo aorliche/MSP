@@ -35,7 +35,7 @@ import {$, $$, dataURItoAB, download, getCursorPosition, Point, fillCircle, inte
 
 window.addEventListener('load', e => {
     const images = $('#images');
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ';
     const letterStrokes = {loaded: 0};
     const draggingImg = $('#dragging-img');
     const prior = [];       // Prior recordings
@@ -194,6 +194,37 @@ window.addEventListener('load', e => {
             $('#recording').appendChild(opt);
         });
     });
+    $('body').addEventListener('keydown', e1 => {
+        e1.preventDefault();
+        const key = e1.key.toUpperCase();
+        if (!letters.includes(key)) return;
+        // Find bottom left point
+        let maxY = 0;
+        let maxX = 0;
+        const xys = [];
+        msps.forEach(msp => {
+            const center = msp.center;
+            const dim = msp.dim;
+            const y = center.y + dim.y/2;
+            const x = center.x + dim.x/2;
+            xys.push(new Point(x, y));
+            if (y-40 >= maxY) {
+                maxY = y-40;
+            }
+        });
+        xys.forEach(p => {
+            if (p.y-35 >= maxY && p.x >= maxX) {
+                maxX = p.x;
+            }
+        });
+        // New line or continue
+        if (maxX > 550) {
+            maxX = 0;
+            maxY += 40;
+        }
+        placeLetter(new Point(maxX, maxY), letterStrokes[key]);
+        record({name: 'Place', p, letter: dragging, invert: $('#invert').checked});
+    });
     function placeLetter(p, letterStrokes) {
         const msp = buildRandomMSP(200, 200, 20, 30);
         letterStrokes.forEach(seg => {
@@ -277,7 +308,7 @@ window.addEventListener('load', e => {
 </script>
 <title>MSP Publishing</title>
 </head>
-<body>
+<body tabindex='0'>
 <h1>MSP Publishing</h1>
 <div id='dragging-div'>
     <img id='dragging-img' width='40'>
