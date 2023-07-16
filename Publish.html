@@ -197,6 +197,13 @@ window.addEventListener('load', e => {
     $('body').addEventListener('keydown', e1 => {
         e1.preventDefault();
         const key = e1.key.toUpperCase();
+        if (key == 'BACKSPACE') {
+            if (msps.length == 0) return;
+            record({name: 'Delete', idx: msps.length-1});
+            msps.splice(msps.length-1, 1);
+            repaint();
+            return;
+        }
         if (!letters.includes(key)) return;
         // Find bottom left point
         let maxY = 0;
