@@ -5,7 +5,7 @@
     //$mysqli = new mysqli('localhost', 'anton', 'AtlanticCityPass', 'hunimal');
     $mysqli = new mysqli('localhost', 'aorliche', 'AtlanticCityPass', 'hunimal');
     
-    $stmt = $mysqli->prepare("select name,json from publish");
+    $stmt = $mysqli->prepare("select name,json from publish_books");
     $success = $stmt->execute();
 
     if (!$success) {

@@ -10,8 +10,8 @@
         exit();
     }
 
-    $stmt = $mysqli->prepare("insert into publish (name, json) values (?, ?)");
-    $stmt->bind_param("ss", $data['name'], $data['recording']);
+    $stmt = $mysqli->prepare("insert into publish_books (name, json) values (?, ?)");
+    $stmt->bind_param("ss", $data['name'], $data['json']);
     $success = $stmt->execute();
 
     if ($success) {

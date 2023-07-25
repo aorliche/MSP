@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+#binding {
+    display: inline-flex;
+}
+#binding > div {
+    padding-left: 10px;
+}
+#pages, #books {
+    width: 100px;
+}
+#book, #book ul {
+    list-style-type: none;
+}
+</style>
+<script type='module'>
+import {$, $$} from './util.js';
+
+window.addEventListener('load', e => {
+    const prior = [];
+    const books = [];
+    fetch('PublishRetriever.php')
+    .then(res => res.json())
+    .then(json => {
+        if (json.error) {
+            alert(json.error);
+            return;
+        }
+        json.forEach(item => {
+            const opt = document.createElement('option');
+            opt.innerText = item.name;
+            $('#pages').appendChild(opt);
+            prior.push(item);
+        });
+    })
+    .catch(e => {
+        console.error(e);
+    });
+    fetch('BooksRetriever.php')
+    .then(res => res.json())
+    .then(json => {
+        if (json.error) {
+            alert(json.error);
+            return;
+        }
+        json.forEach(item => {
+            const opt = document.createElement('option');
+            opt.innerText = item.name;
+            $('#books').appendChild(opt);
+            books.push(item.json);
+        });
+    })
+    .catch(e => {
+        console.error(e);
+    });
+    $('#add').addEventListener('click', e1 => {
+        const sel = $('#pages').selectedIndex;
+        if (sel == -1) return;
+        // Add page
+        const book = $('#book');
+        const checked = $$('#book input:checked');
+        // Create page
+        const li = createPage(prior[sel].name);
+        // Where to insert
+        if (checked.length === 0) {
+            book.appendChild(li);
+        } else {
+            const last = checked[checked.length-1].parentNode;
+            last.after(li);
+        }
+    });
+    $('#branch').addEventListener('click', e1 => {
+        const sel = $('#pages').selectedIndex;
+        if (sel == -1) return;
+        const checked = $$('#book input:checked');
+        if (checked.length == 0) return;
+        // Create page
+        const litop = document.createElement('li');
+        const ul = document.createElement('ul');
+        const li = createPage(prior[sel].name);
+        ul.appendChild(li);
+        litop.appendChild(ul);
+        // Where to insert
+        const last = checked[checked.length-1].parentNode;
+        last.after(litop);
+    });
+    $('#publish').addEventListener('click', e1 => {
+        const name = $('#name').value;
+        if (!name) {
+            alert('Enter a book name');
+            return;
+        }
+        const bookPages = getBookPages($('#book'));
+        if (bookPages.length == 0) {
+            alert('No pages in book');
+            return;
+        }
+        const json = JSON.stringify(bookPages);
+        fetch('BooksHelper.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({name, json}),
+        })
+        .then(res => res.text())
+        .then(data => {
+            books.push(bookPages.slice());
+            const opt = document.createElement('option');
+            opt.innerText = name;
+            $('#books').appendChild(opt);
+            alert(data);
+        })
+        .catch(e => {
+            alert(e);
+        });
+        
+    });
+    $('#books').addEventListener('change', e1 => {
+        const idx = $('#books').selectedIndex;
+        const book = $('#book');
+        book.innerHTML = '';
+        books[idx].forEach(elt => {
+            addPage(book, elt);
+        });
+        $('#name').value = $('#books').options[idx].innerText;
+    });
+    function createPage(name) {
+        const ck = document.createElement('input');
+        ck.type = 'checkbox';
+        const li = document.createElement('li');
+        const text = document.createTextNode(name);
+        li.appendChild(ck);
+        li.appendChild(text);
+        return li;
+    }
+    function getBookPages(node) {
+        return [...node.children]
+        .map(n => {
+            if ([...n.querySelectorAll('li')].length > 0) {
+                return getBookPages(n.querySelector('ul'));
+            }
+            return n.innerText;
+        });
+    }
+    function addPage(node, elt) {
+        if (Array.isArray(elt)) {
+            const ul = document.createElement('ul');
+            node.appendChild(ul);
+            elt.forEach(elt2 => {
+                addPage(ul, elt2);
+            });
+        } else {
+            const li = createPage(elt);
+            node.appendChild(li);
+        }
+    }
+});
+</script>
+    <title>MSP Pages</title>
+</head>
+<body>
+    <div id='binding'>
+        <div>
+            <h2>Books</h2>
+            <select multiple id='books' name='books' size='16'></select><br>
+        </div>
+        <div>
+            <h2>Pages</h2>
+            <select multiple id='pages' name='pages' size='16'></select><br>
+            <button id='add'>Add Page</button><br>
+            <button id='branch'>Branch Page</button>
+        </div>
+        <div>
+            <h2>My Book</h2>
+            <label for='name'>Book Name:</label><input type='text' id='name' name='name'>
+            <ul id='book'>
+            </ul>
+            <button id='publish'>Publish/Update</button>
+        </div>
+    </div>
+</body>
+</html>
