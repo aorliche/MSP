@@ -15,8 +15,8 @@
     $success = $stmt->execute();
 
     if ($success) {
-        printf("Success\n");
+        printf("Success");
     } else {
-        printf("Error: %s\n", $stmt->error);
+        printf("Error: %s", $stmt->error);
     }
 ?>

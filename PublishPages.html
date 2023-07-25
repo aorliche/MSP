@@ -105,16 +105,16 @@ window.addEventListener('load', e => {
         })
         .then(res => res.text())
         .then(data => {
+            alert(data);
+            if (data != 'Success') return;
             books.push(bookPages.slice());
             const opt = document.createElement('option');
             opt.innerText = name;
             $('#books').appendChild(opt);
-            alert(data);
         })
         .catch(e => {
             alert(e);
         });
-        
     });
     $('#books').addEventListener('change', e1 => {
         const idx = $('#books').selectedIndex;
@@ -145,9 +145,11 @@ window.addEventListener('load', e => {
     }
     function addPage(node, elt) {
         if (Array.isArray(elt)) {
-            const ul = document.createElement('ul');
-            node.appendChild(ul);
+            const li = document.createElement('li');
+            node.appendChild(li);
             elt.forEach(elt2 => {
+                const ul = document.createElement('ul');
+                li.appendChild(ul);
                 addPage(ul, elt2);
             });
         } else {
