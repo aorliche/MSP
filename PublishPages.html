@@ -14,13 +14,25 @@
 #book, #book ul {
     list-style-type: none;
 }
+canvas {
+    border: 1px solid white;
+    background-color: black;
+}
 </style>
 <script type='module'>
+import {buildRandomMSP} from './random.js';
+import {loadLetter, StrokePoint, StrokeSegment} from './stroke.js';
 import {$, $$} from './util.js';
 
 window.addEventListener('load', e => {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ';
+    const letterStrokes = {loaded: 0};
     const prior = [];
     const books = [];
+    let msps = [];
+    let curIdx = null;
+    let curBook = null;
+    let recording = [];
     fetch('PublishRetriever.php')
     .then(res => res.json())
     .then(json => {
@@ -54,6 +66,9 @@ window.addEventListener('load', e => {
     })
     .catch(e => {
         console.error(e);
+    });
+    letters.split('').forEach(letter => {
+        loadLetter(`strokes/json/${letter}.json`, letter, letterStrokes);
     });
     $('#add').addEventListener('click', e1 => {
         const sel = $('#pages').selectedIndex;
@@ -125,6 +140,22 @@ window.addEventListener('load', e => {
         });
         $('#name').value = $('#books').options[idx].innerText;
     });
+    $('#play').addEventListener('click', e1 => {
+        const idx = $('#books').selectedIndex;
+        curBook = books[idx];
+        curIdx = curIdx ?? [0];
+        recording = getBookItem(curIdx); 
+        replay(0);
+        curIdx = nextIdx(curIdx);
+    });
+    $('#ff').addEventListener('click', e1 => {
+        const idx = $('#books').selectedIndex;
+        curBook = books[idx];
+        curIdx = curIdx ?? [0];
+        recording = getBookItem(curIdx); 
+        replay(0, true);
+        curIdx = nextIdx(curIdx);
+    });
     function createPage(name) {
         const ck = document.createElement('input');
         ck.type = 'checkbox';
@@ -157,6 +188,95 @@ window.addEventListener('load', e => {
             node.appendChild(li);
         }
     }
+    function repaint() {
+        const canvas = $('#canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        msps.forEach(msp => {
+            msp.draw();
+        });
+    }
+    function replay(i, fast) {
+        if (i >= recording.length) return;
+        if (i == 0) {
+            msps = [];
+            repaint();
+        }
+        const entry = recording[i];
+        console.log(entry);
+        switch (entry.name) {
+            case 'Place': {
+                const sav = $('#invert').checked;
+                $('#invert').checked = entry.invert;
+                placeLetter(entry.p, letterStrokes[entry.letter]);
+                $('#invert').checked = sav;
+                break;
+            }
+            case 'Move': {
+                msps[entry.idx].translate(entry.p.x, entry.p.y);
+                break;
+            }
+            case 'Delete': {
+                msps.splice(entry.idx, 1);
+                break;
+            }
+            case 'Shrink': {
+                msps[entry.idx].scale(0.66);
+                break;
+            }
+            case 'Expand': {
+                msps[entry.idx].scale(1.5);
+                break;
+            }
+        }
+        //$('#recording').selectedIndex = i;
+        if (fast) {
+            replay(i+1, true);
+            return;
+        }
+        repaint(); 
+        setTimeout(() => replay(i+1), 500);
+    }
+    function getBookItem(idx) {
+        let node = prior[idx[0]];
+        for (let i=1; i<idx.length; i++) {
+            node = node[idx[i]];
+        }
+        return node.json;
+    }
+    function nextIdx(idx) {
+        const nidx = idx.slice().push(0);
+        for (let i=nidx.length-1; i>=0; i--) {
+            try {
+                const node = getBookItem(nidx);
+                if (!node) {
+                    nidx.pop();
+                    nidx[nidx.length-1]++;
+                    continue;
+                }
+                return nidx;
+            } catch(e) {}
+        }
+        return null;
+    }
+    function placeLetter(p, letterStrokes) {
+        const msp = buildRandomMSP(200, 200, 20, 30);
+        letterStrokes.forEach(seg => {
+            seg.strokeMSP(msp);
+        });
+        msp.scale(0.1);
+        msp.translate(p.x+20, p.y+20);
+        msp.canvas = $('#canvas');
+        msp.colorize();
+        msp.linewidth = 0.1;
+        if ($('#invert').checked) {
+            msp.rhombi.forEach(r => {
+                r.transparent = !r.transparent;
+            });
+        }
+        msp.draw();
+        msps.push(msp);
+    }
 });
 </script>
     <title>MSP Pages</title>
@@ -166,6 +286,7 @@ window.addEventListener('load', e => {
         <div>
             <h2>Books</h2>
             <select multiple id='books' name='books' size='16'></select><br>
+            <button id='load'>Load Book</button>
         </div>
         <div>
             <h2>Pages</h2>
@@ -179,6 +300,15 @@ window.addEventListener('load', e => {
             <ul id='book'>
             </ul>
             <button id='publish'>Publish/Update</button>
+        </div>
+        <div>
+            <h2>View Book</h2>
+            <input type='checkbox' checked name='invert' id='invert' style='display: none;'>
+            <canvas id='canvas' width='600' height='600'></canvas><br>
+            <button id='play'>Play Page</button>
+            <button id='ff'>Fast Forward</button><br>
+            <div id='prev'></div>
+            <div id='next'></div>
         </div>
     </div>
 </body>
