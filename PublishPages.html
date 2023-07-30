@@ -346,7 +346,7 @@ window.addEventListener('load', e => {
         //$('#recording').selectedIndex = i;
         if (fast) {
             replay(i+1, true);
-            repaint();
+            if (i == 0) repaint();
             return;
         }
         repaint(); 
