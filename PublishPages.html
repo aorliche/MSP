@@ -18,6 +18,9 @@ canvas {
     border: 1px solid white;
     background-color: black;
 }
+#prev2, #next2, #alt2 {
+    display: none;
+}
 </style>
 <script type='module'>
 import {buildRandomMSP} from './random.js';
@@ -30,8 +33,7 @@ window.addEventListener('load', e => {
     const prior = [];
     const books = [];
     let msps = [];
-    let curIdx = null;
-    let curBook = null;
+    let curPage = null;
     let recording = [];
     fetch('PublishRetriever.php')
     .then(res => res.json())
@@ -101,6 +103,10 @@ window.addEventListener('load', e => {
         const last = checked[checked.length-1].parentNode;
         last.after(litop);
     });
+    /*$('#test').addEventListener('click', e1 => {
+        console.log(getBookPages($('#book')));
+        console.log(toTree(null, getBookPages($('#book'))));
+    });*/
     $('#publish').addEventListener('click', e1 => {
         const name = $('#name').value;
         if (!name) {
@@ -139,23 +145,62 @@ window.addEventListener('load', e => {
             addPage(book, elt);
         });
         $('#name').value = $('#books').options[idx].innerText;
+        // Make Links
+        curPage = toTree(null, getBookPages($('#book')));
+        makeLinks();
+        // Play first page
+        recording = getPrior(curPage.page);
+        replay(0, $('#ff').checked);
     });
-    $('#play').addEventListener('click', e1 => {
-        const idx = $('#books').selectedIndex;
-        curBook = books[idx];
-        curIdx = curIdx ?? [0];
-        recording = getBookItem(curIdx); 
-        replay(0);
-        curIdx = nextIdx(curIdx);
+    $('#delete').addEventListener('delete', e1 => {
+        const checked = $$('#book input:checked');
+        if (checked.length == 0) return;
+        checked.forEach(elt => {
+            const li = elt.parent;
+            const ul = li.parent;
+            ul.removeChild(li);
+            //if (ul.querySelectorAll('li')
+        });
     });
-    $('#ff').addEventListener('click', e1 => {
-        const idx = $('#books').selectedIndex;
-        curBook = books[idx];
-        curIdx = curIdx ?? [0];
-        recording = getBookItem(curIdx); 
-        replay(0, true);
-        curIdx = nextIdx(curIdx);
-    });
+    function makeLinks() {
+        [$('#prev'), $('#next'), $('#alt')].forEach(elt => elt.innerHTML = '');
+        [$('#prev2'), $('#next2'), $('#alt2')].forEach(elt => elt.style.display = 'none');
+        if (!curPage) return;
+        [curPage.parent, curPage.main, curPage.alt].forEach(node => {
+            if (node) {
+                const a = document.createElement('a');
+                a.href = '#';
+                a.innerText = node.page;
+                a.addEventListener('click', e1 => {
+                    e1.preventDefault();
+                    recording = getPrior(node.page);
+                    replay(0, $('#ff').checked);
+                    curPage = node;
+                    makeLinks();
+                });
+                if (node == curPage.parent) {
+                    $('#prev').appendChild(a);
+                    $('#prev2').style.display = 'inline-block';
+                }
+                if (node == curPage.main) {
+                    $('#next').appendChild(a);
+                    $('#next2').style.display = 'inline-block';
+                }
+                if (node == curPage.alt) {
+                    $('#alt').appendChild(a);
+                    $('#alt2').style.display = 'inline-block';
+                }
+            }
+        });
+    }
+    function getPrior(name) {
+        for (let i=0; i<prior.length; i++) {
+            if (prior[i].name == name) {
+                return prior[i].json;
+            }
+        }
+        throw 'bad prior name';
+    }
     function createPage(name) {
         const ck = document.createElement('input');
         ck.type = 'checkbox';
@@ -166,21 +211,59 @@ window.addEventListener('load', e => {
         return li;
     }
     function getBookPages(node) {
-        return [...node.children]
+        const nodes = [...node.children]
         .map(n => {
             if ([...n.querySelectorAll('li')].length > 0) {
                 return getBookPages(n.querySelector('ul'));
             }
             return n.innerText;
         });
+        // Combine contiguous arrays
+        // Fixes dumb branching stuff, ensures binary tree?
+        const fixedNodes = [nodes[0]];
+        for (let i=1; i<nodes.length; i++) {
+            const last = fixedNodes[fixedNodes.length-1];
+            if (Array.isArray(last) && Array.isArray(nodes[i])) {
+                nodes[i].forEach(elt => last.push(elt));
+            } else {
+                fixedNodes.push(nodes[i]);
+            }
+        }
+        return fixedNodes;
+    }
+    // Binary tree
+    // Invariant: array is never followed by another array
+    function toTree(parent, arr) {
+        if (arr.length == 0) {
+            throw 'bad tree array length';
+        }
+        const node = {page: arr[0], parent};
+        if (arr.length == 1) {
+            node.main = null;
+            node.alt = null;
+            return node;
+        }
+        if (arr.length == 2) {
+            node.main = Array.isArray(arr[1]) ? toTree(node, arr[1]) : toTree(node, arr.slice(1));
+            node.alt = null;
+            return node;
+        } 
+        if (Array.isArray(arr[1])) {
+            node.main = toTree(node, arr.slice(2));
+            node.alt = toTree(node, arr[1]);
+            return node;
+        }
+        node.main = toTree(node, arr.slice(1));
+        node.alt = null;
+        return node;
     }
     function addPage(node, elt) {
         if (Array.isArray(elt)) {
             const li = document.createElement('li');
+            const ul = document.createElement('ul');
             node.appendChild(li);
+            li.appendChild(ul);
             elt.forEach(elt2 => {
-                const ul = document.createElement('ul');
-                li.appendChild(ul);
                 addPage(ul, elt2);
             });
         } else {
@@ -203,7 +286,6 @@ window.addEventListener('load', e => {
             repaint();
         }
         const entry = recording[i];
-        console.log(entry);
         switch (entry.name) {
             case 'Place': {
                 const sav = $('#invert').checked;
@@ -236,28 +318,6 @@ window.addEventListener('load', e => {
         }
         repaint(); 
         setTimeout(() => replay(i+1), 500);
-    }
-    function getBookItem(idx) {
-        let node = prior[idx[0]];
-        for (let i=1; i<idx.length; i++) {
-            node = node[idx[i]];
-        }
-        return node.json;
-    }
-    function nextIdx(idx) {
-        const nidx = idx.slice().push(0);
-        for (let i=nidx.length-1; i>=0; i--) {
-            try {
-                const node = getBookItem(nidx);
-                if (!node) {
-                    nidx.pop();
-                    nidx[nidx.length-1]++;
-                    continue;
-                }
-                return nidx;
-            } catch(e) {}
-        }
-        return null;
     }
     function placeLetter(p, letterStrokes) {
         const msp = buildRandomMSP(200, 200, 20, 30);
@@ -299,16 +359,17 @@ window.addEventListener('load', e => {
             <label for='name'>Book Name:</label><input type='text' id='name' name='name'>
             <ul id='book'>
             </ul>
-            <button id='publish'>Publish/Update</button>
+            <button id='delete'>Delete</button><br>
+            <button id='publish'>Publish</button>
         </div>
         <div>
             <h2>View Book</h2>
             <input type='checkbox' checked name='invert' id='invert' style='display: none;'>
             <canvas id='canvas' width='600' height='600'></canvas><br>
-            <button id='play'>Play Page</button>
-            <button id='ff'>Fast Forward</button><br>
-            <div id='prev'></div>
-            <div id='next'></div>
+            <input type='checkbox' checked name='ff' id='ff'><label for='ff'>Fast forward</label><br>
+            <div id='prev2'>Prev: <span id='prev'></span></div>
+            <div id='next2'>Next: <span id='next'></span></div>
+            <div id='alt2'>Alt: <span id='alt'></span></div>
         </div>
     </div>
 </body>
