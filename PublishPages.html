@@ -21,6 +21,9 @@ canvas {
 #prev2, #next2, #alt2 {
     display: none;
 }
+#compose-pages, #compose-my-book {
+    display: none;
+}
 </style>
 <script type='module'>
 import {buildRandomMSP} from './random.js';
@@ -152,15 +155,44 @@ window.addEventListener('load', e => {
         recording = getPrior(curPage.page);
         replay(0, $('#ff').checked);
     });
-    $('#delete').addEventListener('delete', e1 => {
+    $('#play').addEventListener('click', e1 => {
+        // Make Links
+        curPage = toTree(null, getBookPages($('#book')));
+        makeLinks();
+        if (!curPage) return;
+        // Play first page
+        recording = getPrior(curPage.page);
+        replay(0, $('#ff').checked);
+    });
+    $('#delete').addEventListener('click', e1 => {
         const checked = $$('#book input:checked');
         if (checked.length == 0) return;
         checked.forEach(elt => {
-            const li = elt.parent;
-            const ul = li.parent;
+            const li = elt.parentNode;
+            if (li.nextSibling && li.nextSibling.firstChild && li.nextSibling.firstChild.tagName == 'UL') {
+                alert("Can't delete while this page has children");
+                return;
+            }
+            const ul = li.parentNode;
+            const litop = ul.parentNode;
             ul.removeChild(li);
-            //if (ul.querySelectorAll('li')
+            if (ul != $('#book') && ul.querySelectorAll('li').length == 0) {
+                ul.parentNode.removeChild(ul);
+                // One more level
+                if (litop.tagName == 'LI') {
+                    litop.parentNode.removeChild(litop);
+                }
+            }
         });
+    });
+    $('#compose').addEventListener('change', e1 => {
+        if ($('#compose').checked) {
+            $('#compose-pages').style.display = 'block';
+            $('#compose-my-book').style.display = 'block';
+        } else {
+            $('#compose-pages').style.display = 'none';
+            $('#compose-my-book').style.display = 'none';
+        }
     });
     function makeLinks() {
         [$('#prev'), $('#next'), $('#alt')].forEach(elt => elt.innerHTML = '');
@@ -346,19 +378,21 @@ window.addEventListener('load', e => {
         <div>
             <h2>Books</h2>
             <select multiple id='books' name='books' size='16'></select><br>
-            <button id='load'>Load Book</button>
+            <button id='load'>Load Book</button><br>
+            <input type='checkbox' name='compose' id='compose'><label for='compose'>Compose</label>
         </div>
-        <div>
+        <div id='compose-pages'>
             <h2>Pages</h2>
             <select multiple id='pages' name='pages' size='16'></select><br>
             <button id='add'>Add Page</button><br>
             <button id='branch'>Branch Page</button>
         </div>
-        <div>
+        <div id='compose-my-book'>
             <h2>My Book</h2>
             <label for='name'>Book Name:</label><input type='text' id='name' name='name'>
             <ul id='book'>
             </ul>
+            <button id='play'>Play</button><br>
             <button id='delete'>Delete</button><br>
             <button id='publish'>Publish</button>
         </div>
