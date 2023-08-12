@@ -35,7 +35,7 @@ import {$, $$, getCursorPosition, Point} from './util.js';
 
 window.addEventListener('load', e => {
     const images = $('#images');
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ';
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 abcdefghijklmnopqrstuvwxyz,.';
     const letterStrokes = {loaded: 0};
     const draggingImg = $('#dragging-img');
     const prior = [];       // Prior recordings
@@ -196,8 +196,9 @@ window.addEventListener('load', e => {
     });
     $('body').addEventListener('keydown', e1 => {
         e1.preventDefault();
-        const key = e1.key.toUpperCase();
-        if (key == 'BACKSPACE') {
+        //const key = e1.key.toUpperCase();
+        const key = e1.key;
+        if (key.toUpperCase() == 'BACKSPACE') {
             if (msps.length == 0) return;
             record({name: 'Delete', idx: msps.length-1});
             msps.splice(msps.length-1, 1);
@@ -332,7 +333,7 @@ window.addEventListener('load', e => {
 <h1>MSP Publishing</h1>
 <div id='dragging-div'>
     <img id='dragging-img' width='40'>
-    <canvas id='canvas' width='600' height='600'></canvas>
+    <div><canvas id='canvas' width='600' height='600'></canvas></div>
     <div id='images'></div>
     <div id='controls'>
         <input type='checkbox' checked id='invert' name='invert'>
