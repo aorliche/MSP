@@ -31,7 +31,7 @@ canvas {
 <script type='module'>
 import {buildRandomMSP} from './random.js';
 import {loadLetter, StrokePoint, StrokeSegment} from './stroke.js';
-import {$, $$, getCursorPosition, Point} from './util.js';
+import {$, $$, dataURItoAB, download, getCursorPosition, Point} from './util.js';
 
 window.addEventListener('load', e => {
     const images = $('#images');
@@ -241,6 +241,14 @@ window.addEventListener('load', e => {
         replay(0, true);
         repaint();
     });
+    $('#screenshot').addEventListener('click', e1 => {
+        const url = $('#canvas').toDataURL();
+        let name = $('#docname').value;
+        if (!name) {
+            name = 'untitled';
+        }
+        download(dataURItoAB(url), `${name}.png`, 'image/png');
+    });
     function placeLetter(p, letterStrokes) {
         const msp = buildRandomMSP(200, 200, 20, 30);
         letterStrokes.forEach(seg => {
@@ -262,7 +270,11 @@ window.addEventListener('load', e => {
     function repaint() {
         const canvas = $('#canvas');
         const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        //ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
         msps.forEach(msp => {
             msp.draw();
             if (msp == selected) {
@@ -353,6 +365,8 @@ window.addEventListener('load', e => {
         <input type='text' id='docname' name='docname'>
         <br>
         <button id='publish' name='publish'>Publish</button>
+        <br>
+        <button id='screenshot' name='screenshot'>Screenshot</button>
     </div>
     <div id='prior-div'>
         <label for='prior'>Prior Work:</label>
